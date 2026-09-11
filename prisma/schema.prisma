@@ -1,0 +1,39 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String    @id @default(cuid())
+  authId    String    @unique
+  email     String    @unique
+  goal      Goal?
+  mealLogs  MealLog[]
+  createdAt DateTime  @default(now())
+}
+
+model Goal {
+  id            String @id @default(cuid())
+  userId        String @unique
+  user          User   @relation(fields: [userId], references: [id])
+  dailyCalories Int
+  proteinG      Int
+  carbsG        Int
+  fatG          Int
+}
+
+model MealLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  rawInput  String
+  calories  Int
+  proteinG  Float
+  carbsG    Float
+  fatG      Float
+  items     String[]
+  loggedAt  DateTime @default(now())
+}
