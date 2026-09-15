@@ -1,4 +1,6 @@
 import { Fraunces, Work_Sans } from "next/font/google";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import Navbar from "@/app/components/Navbar";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -19,28 +21,7 @@ export default function LandingPage() {
       className={`${fraunces.variable} ${workSans.variable} min-h-screen bg-[#16211B] text-[#EFE9DC]`}
       style={{ fontFamily: "var(--font-body)" }}
     >
-      {/* Header */}
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-7 md:px-10">
-        <span
-          className="text-xl tracking-tight text-[#EFE9DC]"
-          style={{ fontFamily: "var(--font-display)", fontWeight: 600 }}
-        >
-          NutriAI
-        </span>
-        <nav className="hidden items-center gap-8 text-sm text-[#B9C2B7] md:flex">
-          <a href="#how" className="hover:text-[#EFE9DC]">How it works</a>
-          <a href="#food" className="hover:text-[#EFE9DC]">Real meals</a>
-          <a href="#start" className="hover:text-[#EFE9DC]">Get started</a>
-        </nav>
-        
-        <a 
-          href="#start"
-          className="rounded-sm bg-[#DDA53B] px-4 py-2 text-sm font-medium text-[#16211B] transition-colors hover:bg-[#e8b657]"
-        >
-          Start logging
-        </a>
-      </header>
-
+      <Navbar />
       {/* Hero */}
       <section className="mx-auto grid max-w-6xl gap-14 px-6 pb-24 pt-10 md:grid-cols-2 md:gap-10 md:px-10 md:pt-16">
         <div className="flex flex-col justify-center">
@@ -55,19 +36,30 @@ export default function LandingPage() {
             back in seconds.
           </h1>
           <p className="mt-6 max-w-md text-[1.05rem] leading-relaxed text-[#B9C2B7]">
-            No searching a food database, no logging each item one by one.
-            Type your whole meal the way you&apos;d text a friend, and
-            NutriAI works out the calories and macros for you.
+            No searching a food database, no logging each item one by one. Type
+            your whole meal the way you&apos;d text a friend, and NutriAI works
+            out the calories and macros for you.
           </p>
           <div className="mt-9 flex items-center gap-4">
-            
-            <a 
-              href="#start"
-              className="rounded-sm bg-[#DDA53B] px-6 py-3 text-sm font-medium text-[#16211B] transition-colors hover:bg-[#e8b657]"
+            <Show when="signed-out">
+              <SignUpButton>
+                <button className="rounded-sm bg-[#DDA53B] px-6 py-3 text-sm font-medium text-[#16211B] transition-colors hover:bg-[#e8b657]">
+                  Start logging free
+                </button>
+              </SignUpButton>
+            </Show>
+            <Show when="signed-in">
+              <a
+                href="/logging"
+                className="rounded-sm bg-[#DDA53B] px-6 py-3 text-sm font-medium text-[#16211B] transition-colors hover:bg-[#e8b657]"
+              >
+                Go to logging
+              </a>
+            </Show>
+            <a
+              href="#how"
+              className="text-sm text-[#B9C2B7] hover:text-[#EFE9DC]"
             >
-              Start logging free
-            </a>
-            <a href="#how" className="text-sm text-[#B9C2B7] hover:text-[#EFE9DC]">
               See how it works
             </a>
           </div>
@@ -118,7 +110,10 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section id="how" className="border-t border-[#2B3A31] px-6 py-20 md:px-10">
+      <section
+        id="how"
+        className="border-t border-[#2B3A31] px-6 py-20 md:px-10"
+      >
         <div className="mx-auto max-w-6xl">
           <h2
             className="max-w-lg text-3xl text-[#EFE9DC] md:text-4xl"
@@ -132,18 +127,15 @@ export default function LandingPage() {
             {[
               {
                 title: "Describe your meal",
-                body:
-                  "Type it in plain language, the way you'd tell someone what you had. No portion sliders, no matching a branded product.",
+                body: "Type it in plain language, the way you'd tell someone what you had. No portion sliders, no matching a branded product.",
               },
               {
                 title: "NutriAI works it out",
-                body:
-                  "One sentence for the whole plate — no adding items one at a time. It reasons about typical portions and mixed dishes, whatever it actually was.",
+                body: "One sentence for the whole plate — no adding items one at a time. It reasons about typical portions and mixed dishes, whatever it actually was.",
               },
               {
                 title: "Watch your day add up",
-                body:
-                  "Calories and macros land on your dashboard automatically, checked against the goals you set once.",
+                body: "Calories and macros land on your dashboard automatically, checked against the goals you set once.",
               },
             ].map((step) => (
               <div key={step.title} className="relative pt-8">
@@ -164,7 +156,10 @@ export default function LandingPage() {
       </section>
 
       {/* Real meals section */}
-      <section id="food" className="border-t border-[#2B3A31] px-6 py-20 md:px-10">
+      <section
+        id="food"
+        className="border-t border-[#2B3A31] px-6 py-20 md:px-10"
+      >
         <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-2 md:gap-20">
           <div>
             <h2
@@ -175,11 +170,11 @@ export default function LandingPage() {
             </h2>
             <p className="mt-5 max-w-md text-[1.05rem] leading-relaxed text-[#B9C2B7]">
               Most food databases are built around packaged products with
-              barcodes. Home-cooked meals, thalis, mixed curries, and
-              &quot;a bit of everything&quot; plates don&apos;t fit that
-              mold — so they usually get logged badly, or not at all. NutriAI
-              reasons about the whole meal at once, instead of making you
-              search for and add each ingredient individually.
+              barcodes. Home-cooked meals, thalis, mixed curries, and &quot;a
+              bit of everything&quot; plates don&apos;t fit that mold — so they
+              usually get logged badly, or not at all. NutriAI reasons about the
+              whole meal at once, instead of making you search for and add each
+              ingredient individually.
             </p>
           </div>
           <div className="space-y-3">
@@ -215,13 +210,22 @@ export default function LandingPage() {
           <p className="mx-auto mt-4 max-w-md text-[1.05rem] text-[#B9C2B7]">
             Free to start. No card required.
           </p>
-          
-          <a 
-            href="/signup"
-            className="mt-8 inline-block rounded-sm bg-[#DDA53B] px-7 py-3 text-sm font-medium text-[#16211B] transition-colors hover:bg-[#e8b657]"
-          >
-            Create your account
-          </a>
+
+          <Show when="signed-out">
+            <SignUpButton>
+              <button className="mt-8 inline-block rounded-sm bg-[#DDA53B] px-7 py-3 text-sm font-medium text-[#16211B] transition-colors hover:bg-[#e8b657]">
+                Create your account
+              </button>
+            </SignUpButton>
+          </Show>
+          <Show when="signed-in">
+            <a
+              href="/logging"
+              className="mt-8 inline-block rounded-sm bg-[#DDA53B] px-7 py-3 text-sm font-medium text-[#16211B] transition-colors hover:bg-[#e8b657]"
+            >
+              Log a meal now
+            </a>
+          </Show>
         </div>
       </section>
 

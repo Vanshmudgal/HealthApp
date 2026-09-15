@@ -1,7 +1,8 @@
 "use client";
 
 import { experimental_useObject as useObject } from "@ai-sdk/react";
-import { mealSchema } from "../api/analyze-meal/route";
+import Navbar from "@/app/components/Navbar";
+import { mealSchema } from "@/lib/meal-schema";
 
 export default function LoggingPage() {
   const { object, submit, isLoading, error } = useObject({
@@ -17,8 +18,10 @@ export default function LoggingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#16211B] text-[#EFE9DC] px-6 py-12 md:px-10">
-      <div className="mx-auto max-w-2xl">
+    <div className="min-h-screen bg-[#16211B] text-[#EFE9DC]">
+      <Navbar />
+
+      <div className="mx-auto max-w-2xl px-6 py-12 md:px-10">
         <header className="mb-12">
           <h1 className="text-3xl font-semibold mb-2">Log your meal</h1>
           <p className="text-[#B9C2B7]">
