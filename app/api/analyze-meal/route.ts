@@ -22,6 +22,11 @@ export async function POST(req: Request) {
     return new Response("GROQ_API_KEY is not set.", { status: 500 });
   }
 
+  // ✅ Fetch Clerk user HERE — while the HTTP request context is still alive.
+  // Calling currentUser() inside onFinish() silently returns null because
+  // the request is already finished by then, breaking user creation.
+  const clerkUser = await currentUser();
+
   const result = streamObject({
     model: groq("openai/gpt-oss-120b"),
     system: `You are an expert nutritionist AI. For each food item, estimate calories, macronutrients (protein, carbs, fat, fiber in grams), and the most relevant vitamins/minerals with amount, unit, and % daily value. Only include vitamins/minerals notably present in that food.`,
@@ -38,19 +43,25 @@ export async function POST(req: Request) {
         let dbUser = await prisma.user.findUnique({ where: { authId } });
 
         if (!dbUser) {
-          const clerkUser = await currentUser();
           const email =
             clerkUser?.emailAddresses?.[0]?.emailAddress ??
             `${authId}@placeholder.local`;
 
-          const username =
-            (clerkUser?.username ??
-              [clerkUser?.firstName, clerkUser?.lastName]
-                .filter(Boolean)
-                .join(" ")) ||
+          const avatarUrl = clerkUser?.imageUrl ?? "";
+
+          const baseName =
+            clerkUser?.username ||
+            [clerkUser?.firstName, clerkUser?.lastName]
+              .filter(Boolean)
+              .join(" ") ||
             email.split("@")[0];
 
-          const avatarUrl = clerkUser?.imageUrl ?? "";
+          // username column is unique — check before inserting
+          let username = baseName;
+          const taken = await prisma.user.findUnique({ where: { username } });
+          if (taken) {
+            username = `${baseName}-${authId.slice(-5)}`;
+          }
 
           dbUser = await prisma.user.create({
             data: { authId, email, username, avatarUrl },
@@ -69,7 +80,6 @@ export async function POST(req: Request) {
           },
         });
       } catch (err) {
-        // Don't crash the response stream if saving fails — just log it
         console.error("Failed to save meal log:", err);
       }
     },

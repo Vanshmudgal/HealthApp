@@ -1,7 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import Navbar from "@/app/components/Navbar";
 import { prisma } from "@/lib/prisma";
-import WeeklyChart from "@/app/components/WeeklyChart";
+import ChartWrapper from "@/app/components/ChartWrapper";
 
 export default async function AnalyticsPage() {
   const { userId: authId } = await auth();
@@ -24,14 +24,35 @@ export default async function AnalyticsPage() {
     include: { goal: true },
   });
 
+  // If no DB user yet (never logged a meal), create one so the page works
   if (!user) {
+    const clerkUser = await currentUser();
+    const email =
+      clerkUser?.emailAddresses?.[0]?.emailAddress ??
+      `${authId}@placeholder.local`;
+    const avatarUrl = clerkUser?.imageUrl ?? "";
+    const baseName =
+      clerkUser?.username ||
+      [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ") ||
+      email.split("@")[0];
+    let username = baseName;
+    const taken = await prisma.user.findUnique({ where: { username } });
+    if (taken) username = `${baseName}-${authId.slice(-5)}`;
+    await prisma.user.create({ data: { authId, email, username, avatarUrl } });
+  }
+
+  // Re-fetch with goal included (covers both existing and just-created user)
+  const dbUser = await prisma.user.findUnique({
+    where: { authId },
+    include: { goal: true },
+  });
+
+  if (!dbUser) {
     return (
       <div className="min-h-screen bg-[#16211B] text-[#EFE9DC]">
         <Navbar />
         <div className="mx-auto max-w-4xl px-6 py-12 md:px-10">
-          <p className="text-[#B9C2B7]">
-            No account data found yet. Log a meal first.
-          </p>
+          <p className="text-[#B9C2B7]">Something went wrong. Please try again.</p>
         </div>
       </div>
     );
@@ -47,7 +68,7 @@ export default async function AnalyticsPage() {
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    d.setHours(0, 0, 0, 0);
+    d.setUTCHours(0, 0, 0, 0);
     days.push({
       date: d,
       label: d.toLocaleDateString("en-US", { weekday: "short" }),
@@ -60,7 +81,7 @@ export default async function AnalyticsPage() {
 
   const logs = await prisma.mealLog.findMany({
     where: {
-      userId: user.id,
+      userId: dbUser.id,
       loggedAt: { gte: sevenDaysAgo },
     },
     orderBy: { loggedAt: "asc" },
@@ -68,7 +89,7 @@ export default async function AnalyticsPage() {
 
   for (const log of logs) {
     const logDate = new Date(log.loggedAt);
-    logDate.setHours(0, 0, 0, 0);
+    logDate.setUTCHours(0, 0, 0, 0);
     const bucket = days.find((d) => d.date.getTime() === logDate.getTime());
     if (bucket) {
       bucket.calories += log.calories;
@@ -122,10 +143,10 @@ export default async function AnalyticsPage() {
           <h2 className="text-lg font-medium mb-6 text-[#EFE9DC]">
             Daily breakdown
           </h2>
-          <WeeklyChart
+          <ChartWrapper
             data={chartData}
-            calorieGoal={user.goal?.dailyCalories}
-            proteinGoal={user.goal?.proteinG}
+            calorieGoal={dbUser.goal?.dailyCalories}
+            proteinGoal={dbUser.goal?.proteinG}
           />
         </div>
 
